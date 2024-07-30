@@ -1,104 +1,136 @@
-import React, { useState } from 'react'
-import './Weatherapp.css'
-import search_icon from '../Assets/search.png'
-import clear_icon from '../Assets/clear.png'
-import drizzle_icon from '../Assets/drizzle.png'
-import rain_icon from '../Assets/rain.png'
-import wind_icon from '../Assets/wind.png'
-import humidity_icon from '../Assets/humidity.png'
-import cloud_icon from '../Assets/cloud.png'
-import snow_icon from '../Assets/snow.png'
+
+import React, { useState, useEffect } from 'react';
+import './Weatherapp.css';
+import search_icon from '../Assets/search.png';
+import clear_icon from '../Assets/clear.png';
+import drizzle_icon from '../Assets/drizzle.png';
+import rain_icon from '../Assets/rain.png';
+import wind_icon from '../Assets/wind.png';
+import humidity_icon from '../Assets/humidity.png';
+import cloud_icon from '../Assets/cloud.png';
+import snow_icon from '../Assets/snow.png';
 
 const Weatherapp = () => {
 
-    let api_key= "515112396013c748f629e5e9539680eb"
+    const api_key = "0e8577566facdfad6d795f7481c130ec"
+    // const api_key = process.env.REACT_APP_API_KEY;
+    // console.log(`API Key: ${api_key}`);
 
-    const[icon,seticon] = useState(cloud_icon)
+    const defaultCity = 'New York'; 
+    const [city, setCity] = useState('');
+    const [icon, setIcon] = useState(cloud_icon);
+    const [error, setError] = useState('');
+    const [weatherData, setWeatherData] = useState(null);
+    const [initialFetchDone, setInitialFetchDone] = useState(false);
 
+    useEffect(() => {
+        fetchWeatherData(defaultCity);
+        setInitialFetchDone(true);
+    }, []);
 
-    const search = async() =>{
-          const element = document.getElementsByClassName("cityInput")
-          if(element[0].value === ""){
-            return 0
-          }
-          let url = `https://api.openweathermap.org/data/2.5/weather?q=${element[0].value}&units=Metric&appid=${api_key}`
+    const fetchWeatherData = async (city) => {
+        try {
+            let response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=Metric&appid=${api_key}`);
+            let data = await response.json();
 
-          let response = await fetch( url)
-          let data = await response.json()
-
-            const humidity = document.getElementsByClassName("humidity-percentage")
-            const wind = document.getElementsByClassName("wind-rate")
-            const temperature = document.getElementsByClassName("weather-temp")
-            const location = document.getElementsByClassName("weather-location")
-
-            humidity[0].innerHTML =data.main.humidity + " % "
-            wind[0].innerHTML = Math.floor(data.wind.speed )+ " Km/h "
-            temperature[0].innerHTML =Math.floor( data.main.temperature )+ " °c "
-            location[0].innerHTML = data.name
-
-
-            if(data.weather[0].icon === "01d" || data.weather[0].icon ==="01n"){
-                 seticon(clear_icon)
+            if (response.ok) {
+                setError('');
+                setWeatherData(data);
+                setWeatherIcon(data.weather[0].icon);
+            } else {
+                setError("No data found, enter proper location.");
+                setWeatherData(null);
             }
-            else   if(data.weather[0].icon === "02d" || data.weather[0].icon ==="02n"){
-                 seticon(cloud_icon)
-            }
-            else   if(data.weather[0].icon === "03d" || data.weather[0].icon ==="03n"){
-                    seticon(drizzle_icon)
-           }
-           else   if(data.weather[0].icon === "04d" || data.weather[0].icon ==="04n"){
-                    seticon(drizzle_icon)
-            }
-          else   if(data.weather[0].icon === "09d" || data.weather[0].icon ==="09n"){
-                 seticon(rain_icon)
-            }  
-            else   if(data.weather[0].icon === "010d" || data.weather[0].icon ==="010n"){
-                seticon(rain_icon)
-           }
-           else   if(data.weather[0].icon === "013d" || data.weather[0].icon ==="013n"){
-                 seticon(snow_icon)
-            }
-            else
-            {
-                seticon(clear_icon)
-            }
-    }
+        } catch (error) {
+            setError("No data found, enter proper location.");
+            setWeatherData(null);
+        }
+    };
 
-  return (
-    <div className='container'>
-        <div className="top-bar">
-             <input type="text" className='cityInput' placeholder="search" />
-              <div className="search-icon" onClick={()=>{search()}}>
-                  <img src={search_icon} alt="" />
-              </div>
-        </div>
-        <div className="weather-image">
-               <img src={icon} alt="" />
-        </div>
-        <div className="weather-temp">23°c</div>
-        <div className="weather-location">LONDON</div>
-        <div className="data-container">
-            {/* ex1 */}
-            <div className="element">
-                <img src={humidity_icon} alt='' className='icon' />
-                <div className="data">
-                    <div className="humidity-percentage">65%</div>
-                    <div className="text">Humidity</div>
+    const setWeatherIcon = (weatherIcon) => {
+        switch (weatherIcon) {
+            case "01d":
+            case "01n":
+                setIcon(clear_icon);
+                break;
+            case "02d":
+            case "02n":
+                setIcon(cloud_icon);
+                break;
+            case "03d":
+            case "03n":
+            case "04d":
+            case "04n":
+                setIcon(drizzle_icon);
+                break;
+            case "09d":
+            case "09n":
+            case "10d":
+            case "10n":
+                setIcon(rain_icon);
+                break;
+            case "13d":
+            case "13n":
+                setIcon(snow_icon);
+                break;
+            default:
+                setIcon(clear_icon);
+                break;
+        }
+    };
+
+    const handleSearch = () => {
+        if (city.trim() === "") {
+            setError("No data found, enter proper location.");
+            setWeatherData(null);
+        } else {
+            fetchWeatherData(city);
+        }
+    };
+
+    return (
+        <div className='container'>
+            <div className="top-bar">
+                <input 
+                    type="text" 
+                    className='cityInput' 
+                    id="autocompleteInput" 
+                    placeholder={initialFetchDone ? "search" : ""} 
+                    value={city} 
+                    onChange={(e) => setCity(e.target.value)}
+                />
+                <div className="search-icon" onClick={handleSearch}>
+                    <img src={search_icon} alt="" />
                 </div>
             </div>
-              {/* ex2 */}
-            <div className="element">
-                <img src={wind_icon} alt='' className='icon' />
-                <div className="data">
-                    <div className="wind-rate">65 kmphr</div>
-                    <div className="text">Wind speed</div>
-                </div>
-            </div>
-
+            {error && <div className="error-message">{error}</div>}
+            {weatherData && !error && (
+                <>
+                    <div className="weather-image">
+                        <img src={icon} alt="" />
+                    </div>
+                    <div className="weather-temp">{Math.floor(weatherData.main.temp)}°c</div>
+                    <div className="weather-location">{weatherData.name}</div>
+                    <div className="data-container">
+                        <div className="element">
+                            <img src={humidity_icon} alt='' className='icon' />
+                            <div className="data">
+                                <div className="humidity-percentage">{weatherData.main.humidity} %</div>
+                                <div className="text">Humidity</div>
+                            </div>
+                        </div>
+                        <div className="element">
+                            <img src={wind_icon} alt='' className='icon' />
+                            <div className="data">
+                                <div className="wind-rate">{Math.floor(weatherData.wind.speed)} Km/h</div>
+                                <div className="text">Wind speed</div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
-        
-    </div>
-  )
-}
+    );
+};
 
-export default Weatherapp
+export default Weatherapp;
